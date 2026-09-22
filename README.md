@@ -56,5 +56,21 @@ npm run build
 The admin ingestion feed reads current India weather/IMD articles from Google News RSS
 through the Vite development proxy at `/api/weather-news`. Articles are labeled as
 `REVIEW` and are not treated as official IMD warnings until verified by an operator.
-For production hosting, configure an equivalent server-side RSS proxy because static
-browser deployments cannot safely proxy cross-origin RSS requests.
+When that proxy is unavailable, including on static GitHub Pages hosting, the feed
+automatically falls back to live Open-Meteo observations for major Indian cities so
+the dashboard continues to receive current data.
+
+### Requirement coverage
+
+- Multi-source ingestion: live weather-news RSS plus browser-submitted public observations.
+- Event understanding: reports are classified into rainfall, flooding, thunderstorms, wind,
+  heatwave, fog and dust-storm categories.
+- Verification: reports have `verified`, `review`, `fake` and `official` states with an
+  operator workbench for status changes.
+- Deduplication: duplicate live articles are removed by source URL/content identity; public
+  observations retain spatial duplicate-cluster metadata.
+- Dashboard analysis: the admin view supports date, custom date, event, state, district/city,
+  verification, source and text filters. The map and charts use the filtered records.
+- Central storage: not yet implemented. The current application keeps data in browser memory
+  and external APIs; a shared PostgreSQL/Supabase backend is required for persistent,
+  multi-user centralized storage.

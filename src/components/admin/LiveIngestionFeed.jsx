@@ -35,7 +35,7 @@ export default function LiveIngestionFeed({
         </div>
 
         <span className="text-[11px] text-slate-300 font-mono">
-          {items.some((item) => item.source === 'news') ? 'Live weather news' : 'Waiting for live news'}
+          {items.some((item) => item.source === 'news') ? 'Live weather news' : items.some((item) => item.source === 'weather_api') ? 'Live weather observations' : 'Waiting for live data'}
         </span>
       </div>
 
@@ -66,7 +66,7 @@ export default function LiveIngestionFeed({
                       <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${
                         item.source === 'twitter' ? 'bg-slate-900 text-white' : item.source === 'citizen' ? 'bg-emerald-700 text-white' : item.source === 'news' ? 'bg-violet-700 text-white' : 'bg-blue-700 text-white'
                       }`}>
-                        {item.source === 'twitter' ? '𝕏 Post' : item.source === 'citizen' ? 'Jan-Mausam' : item.source === 'news' ? 'News' : 'Buoy/Sensor'}
+                        {item.source === 'twitter' ? '𝕏 Post' : item.source === 'citizen' ? 'Jan-Mausam' : item.source === 'news' ? 'News' : item.source === 'weather_api' ? 'Weather API' : 'Buoy/Sensor'}
                       </span>
                       <span className="text-xs font-bold text-slate-800 truncate" title={item.sourceHandle}>
                         {item.sourceHandle}

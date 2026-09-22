@@ -28,6 +28,7 @@ export default function DataFilterToolbar({
   };
 
   const selectedStateObj = INDIAN_STATES_DATA.find(s => s.state === filters.state);
+  const districts = selectedStateObj?.districts || [];
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
@@ -79,11 +80,21 @@ export default function DataFilterToolbar({
             onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
             className="w-full bg-slate-50 border border-slate-300 rounded-md p-2 text-slate-800 focus:outline-none focus:border-blue-600"
           >
-            <option value="today">Today (21-Sep-2026)</option>
+            <option value="today">Today</option>
             <option value="24h">Past 24 Hours</option>
             <option value="7d">Past 7 Days</option>
+            <option value="custom">Choose a date</option>
             <option value="all">All Ingested Records</option>
           </select>
+          {filters.dateRange === 'custom' && (
+            <input
+              type="date"
+              value={filters.date || ''}
+              onChange={(e) => setFilters(prev => ({ ...prev, date: e.target.value }))}
+              className="w-full mt-1 bg-slate-50 border border-slate-300 rounded-md p-2 text-slate-800 focus:outline-none focus:border-blue-600"
+              aria-label="Filter by date"
+            />
+          )}
         </div>
 
         {/* 2. Event-wise Filter */}
@@ -128,7 +139,28 @@ export default function DataFilterToolbar({
           </select>
         </div>
 
-        {/* 4. Verification Status Tracking */}
+        {/* 4. Location-wise Filter (District) */}
+        <div>
+          <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
+            <MapPin className="w-3.5 h-3.5 text-rose-600" />
+            District / City
+          </label>
+          <select
+            value={filters.district}
+            onChange={(e) => setFilters(prev => ({ ...prev, district: e.target.value }))}
+            disabled={!selectedStateObj}
+            className="w-full bg-slate-50 border border-slate-300 rounded-md p-2 text-slate-800 focus:outline-none focus:border-blue-600 disabled:opacity-50"
+          >
+            <option value="all">All districts</option>
+            {districts.map((district) => (
+              <option key={district.district} value={district.district}>
+                {district.district}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* 5. Verification Status Tracking */}
         <div>
           <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
             <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
@@ -147,7 +179,7 @@ export default function DataFilterToolbar({
           </select>
         </div>
 
-        {/* 5. Source Stream Filter */}
+        {/* 6. Source Stream Filter */}
         <div>
           <label className="block font-bold text-slate-700 mb-1 flex items-center gap-1">
             <Share2 className="w-3.5 h-3.5 text-cyan-600" />
@@ -162,6 +194,7 @@ export default function DataFilterToolbar({
             <option value="twitter">X / Twitter (#IMD)</option>
             <option value="citizen">Jan-Mausam (Citizen App)</option>
             <option value="news">Live weather news</option>
+            <option value="weather_api">Live weather observations</option>
             <option value="public_api">Public Datasets & Buoys</option>
           </select>
         </div>
