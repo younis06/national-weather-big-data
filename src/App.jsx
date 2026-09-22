@@ -32,7 +32,11 @@ export default function App() {
       const liveItems = await fetchLiveWeatherNews();
       setBigDataFeed((previous) => {
         const citizenItems = previous.filter((item) => item.source === 'citizen');
-        return [...citizenItems, ...liveItems].slice(0, 50);
+        const uniqueItems = [...liveItems, ...citizenItems].filter((item, index, items) => {
+          const identity = item.externalUrl || `${item.source}|${item.text}`;
+          return items.findIndex((candidate) => (candidate.externalUrl || `${candidate.source}|${candidate.text}`) === identity) === index;
+        });
+        return uniqueItems.slice(0, 50);
       });
       setNewsFeedStatus('live');
     } catch (error) {

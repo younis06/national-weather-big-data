@@ -36,7 +36,8 @@ export default function BigDataAnalyticsCharts({
   const fakeCount = feed.filter(f => f.verificationStatus === 'fake').length;
   const reviewCount = feed.filter(f => f.verificationStatus === 'review').length;
   const totalClusters = feed.reduce((acc, f) => acc + (f.clusterCount || 1), 0);
-  const dedupSavings = totalClusters > 0 ? Math.round(((totalClusters - totalEvents) / totalClusters) * 100) : 18;
+  const duplicateReports = Math.max(0, totalClusters - totalEvents);
+  const dedupSavings = totalClusters > 0 ? Math.round((duplicateReports / totalClusters) * 100) : 0;
 
   // 2. Hazard Distribution Data
   const hazardCounts = {
@@ -74,16 +75,12 @@ export default function BigDataAnalyticsCharts({
   ];
 
   // 4. Ingestion Timeline (Hourly volume)
-  const timelineData = [
-    { time: '14:00', socialVolume: 120, awsAlerts: 14 },
-    { time: '15:00', socialVolume: 190, awsAlerts: 22 },
-    { time: '16:00', socialVolume: 340, awsAlerts: 48 },
-    { time: '17:00', socialVolume: 510, awsAlerts: 65 },
-    { time: '18:00', socialVolume: 780, awsAlerts: 92 },
-    { time: '19:00', socialVolume: 960, awsAlerts: 110 },
-    { time: '20:00', socialVolume: 1240, awsAlerts: 145 },
-    { time: '20:30', socialVolume: 1420, awsAlerts: 160 }
-  ];
+  const timelineData = Object.entries(feed.reduce((hours, item) => {
+    const hour = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', hour12: false });
+    const sourceKey = item.source === 'news' ? 'newsVolume' : 'observationVolume';
+    hours[hour] = { ...(hours[hour] || { time: hour, newsVolume: 0, observationVolume: 0 }), [sourceKey]: (hours[hour]?.[sourceKey] || 0) + 1 };
+    return hours;
+  }, {})).sort(([a], [b]) => a.localeCompare(b)).map(([, value]) => value);
 
   // 5. Data Export Handlers (NDRF / SDMA)
   const handleExportJSON = () => {
@@ -122,10 +119,10 @@ export default function BigDataAnalyticsCharts({
             <Database className="w-4 h-4 text-blue-600" />
           </div>
           <div className="text-2xl font-black text-slate-900 font-mono">
-            {totalEvents * 142}
+            {totalEvents}
           </div>
           <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
-            <span className="text-emerald-600 font-bold">↑ 18%</span> from last hour
+            <span className="text-slate-500 font-bold">Current filtered records</span>
           </div>
         </div>
 
@@ -136,10 +133,10 @@ export default function BigDataAnalyticsCharts({
             <Activity className="w-4 h-4 text-emerald-600 animate-pulse" />
           </div>
           <div className="text-2xl font-black text-slate-900 font-mono">
-            48.2 <span className="text-xs font-normal text-slate-500">ev/sec</span>
+            {totalEvents ? (totalEvents / Math.max(1, timelineData.length)).toFixed(1) : '0'} <span className="text-xs font-normal text-slate-500">records/hour</span>
           </div>
           <div className="text-[11px] text-slate-500 mt-1">
-            Peak: 96.5 ev/sec (Mumbai Rain)
+            Based on the selected filters
           </div>
         </div>
 
@@ -210,8 +207,8 @@ export default function BigDataAnalyticsCharts({
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip contentStyle={{ backgroundColor: '#0b2545', color: '#fff', borderRadius: '8px', fontSize: '12px' }} />
                 <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
-                <Line type="monotone" dataKey="socialVolume" name="Social Feeds (#IMD)" stroke="#0284c7" strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="awsAlerts" name="AWS Sensor Triggers" stroke="#ea580c" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="newsVolume" name="Live News" stroke="#0284c7" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="observationVolume" name="Public Observations" stroke="#ea580c" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

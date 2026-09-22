@@ -27,6 +27,7 @@ export default function AdminDashboard({
     category: 'all',
     state: 'all',
     district: 'all',
+    date: '',
     status: 'all',
     source: 'all',
     searchQuery: ''
@@ -38,6 +39,7 @@ export default function AdminDashboard({
       category: 'all',
       state: 'all',
       district: 'all',
+      date: '',
       status: 'all',
       source: 'all',
       searchQuery: ''
@@ -46,10 +48,17 @@ export default function AdminDashboard({
 
   // Apply filters
   const filteredFeed = feed.filter(item => {
+    const itemDate = new Date(item.timestamp);
+    const now = new Date();
+    if (filters.dateRange === '24h' && now - itemDate > 24 * 60 * 60 * 1000) return false;
+    if (filters.dateRange === '7d' && now - itemDate > 7 * 24 * 60 * 60 * 1000) return false;
+    if (filters.dateRange === 'today' && itemDate.toDateString() !== now.toDateString()) return false;
+    if (filters.dateRange === 'custom' && filters.date && item.timestamp.slice(0, 10) !== filters.date) return false;
     // 1. Category
     if (filters.category !== 'all' && item.eventCategory !== filters.category) return false;
     // 2. State
     if (filters.state !== 'all' && item.state !== filters.state) return false;
+    if (filters.district !== 'all' && item.city !== filters.district && item.district !== filters.district) return false;
     // 3. Status
     if (filters.status !== 'all' && item.verificationStatus !== filters.status) return false;
     // 4. Source
