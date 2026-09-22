@@ -17,6 +17,7 @@ import {
   Share2,
   ExternalLink
 } from 'lucide-react';
+import { getAuthenticityAssessment } from '../../utils/authenticity.js';
 
 export default function AIVerificationWorkbench({
   item,
@@ -37,6 +38,7 @@ export default function AIVerificationWorkbench({
   }
 
   const nearest = item.nearestSensor;
+  const authenticity = getAuthenticityAssessment(item);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[580px]">
@@ -73,6 +75,15 @@ export default function AIVerificationWorkbench({
             </div>
           </div>
 
+          <div className="p-3 rounded-xl border border-violet-200 bg-violet-50">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-bold text-violet-950">Authenticity assessment</span>
+              <span className="text-sm font-extrabold text-violet-900">{authenticity.score}% · {authenticity.label}</span>
+            </div>
+            <p className="text-[11px] text-violet-900 mt-1 leading-relaxed">{authenticity.reason}</p>
+            <p className="text-[10px] text-violet-700 mt-1">This is an evidence-based assessment, not a guarantee of truth. Open the publisher links below to inspect the original reports.</p>
+          </div>
+
           <div className="flex items-center gap-2">
             <span className={`text-xs font-extrabold uppercase px-2.5 py-1 rounded-full ${
               item.verificationStatus === 'verified'
@@ -102,10 +113,21 @@ export default function AIVerificationWorkbench({
               <div className="flex flex-wrap gap-2">
                 {item.relatedSources.map((source) => (
                   <a key={source.name} href={source.url || '#'} target="_blank" rel="noreferrer" className="text-xs text-emerald-800 underline">
-                    {source.name}
+                  {source.name} {source.verified ? `(trusted ${source.verificationBasis})` : '(unverified source)'}
                   </a>
                 ))}
               </div>
+            </div>
+          )}
+          {item.evidenceChecks?.length > 0 && (
+            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="text-xs font-bold text-slate-800 mb-1">Evidence checks passed</div>
+              <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-slate-700">
+                {item.evidenceChecks.map((check) => <li key={check}>{check}</li>)}
+              </ul>
+              <p className="text-[10px] text-slate-500 mt-2">
+                Citation links are retained from the live RSS result. They support source inspection but do not independently prove the event.
+              </p>
             </div>
           )}
 
@@ -140,7 +162,7 @@ export default function AIVerificationWorkbench({
               Ground Truth Sensor Cross-Reference
             </span>
             <span className="font-mono font-extrabold text-blue-900 text-sm">
-              Confidence: {item.aiConfidenceScore}%
+              Confidence: {authenticity.score}%
             </span>
           </div>
 

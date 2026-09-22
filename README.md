@@ -71,7 +71,15 @@ the dashboard continues to receive current data.
   observations retain spatial duplicate-cluster metadata.
 - News corroboration: similar headlines are grouped into one story. Each story displays its
   publisher links; it is marked `VERIFIED` only when at least two different publishers
-  independently report a matching event. Single-source stories remain `REVIEW`.
+  independently report a matching event. The feed also shows an authenticity assessment:
+  `VERIFIED FOR DISPLAY` only when at least two independent reports include at least one
+  publisher from the trusted source registry. All other news stories are held back.
+  `DIRECT OBSERVATION` is used for live weather API measurements. These assessments explain
+  the available evidence and do not guarantee that a news claim is true. Each displayed
+  story retains its citation links and shows evidence checks for publisher identity,
+  independent-source count, duplicate grouping, and citation retention. A confidence
+  score represents the strength of those checks; it is not a probability that every
+  statement in the article is factually correct.
 - Dashboard analysis: the admin view supports date, custom date, event, state, district/city,
   verification, source and text filters. The map and charts use the filtered records.
 - Central storage: not yet implemented. The current application keeps data in browser memory

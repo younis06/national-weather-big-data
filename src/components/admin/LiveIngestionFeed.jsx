@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Layers
 } from 'lucide-react';
+import { getAuthenticityAssessment } from '../../utils/authenticity.js';
 
 export default function LiveIngestionFeed({
   items,
@@ -48,6 +49,7 @@ export default function LiveIngestionFeed({
         ) : (
           items.map((item) => {
             const isSelected = selectedItemId === item.id;
+            const authenticity = getAuthenticityAssessment(item);
 
             return (
               <div
@@ -75,7 +77,7 @@ export default function LiveIngestionFeed({
 
                     {/* Status Pill */}
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1 ${
-                      item.verificationStatus === 'verified'
+                      authenticity.label === 'VERIFIED FOR DISPLAY' || authenticity.label === 'DIRECT OBSERVATION'
                         ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                         : item.verificationStatus === 'fake'
                         ? 'bg-red-100 text-red-800 border border-red-300'
@@ -83,8 +85,8 @@ export default function LiveIngestionFeed({
                         ? 'bg-blue-100 text-blue-800 border border-blue-300'
                         : 'bg-amber-100 text-amber-800 border border-amber-300'
                     }`}>
-                      {item.verificationStatus === 'verified' ? <CheckCircle className="w-3 h-3" /> : item.verificationStatus === 'fake' ? <XCircle className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
-                      <span>{item.verificationStatus.toUpperCase()}</span>
+                      {authenticity.label === 'VERIFIED FOR DISPLAY' || authenticity.label === 'DIRECT OBSERVATION' ? <CheckCircle className="w-3 h-3" /> : item.verificationStatus === 'fake' ? <XCircle className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
+                      <span>{authenticity.label}</span>
                     </span>
                   </div>
 
@@ -119,9 +121,12 @@ export default function LiveIngestionFeed({
                     )}
                     {item.sourceCount > 1 && (
                       <span className="text-emerald-700 font-semibold">
-                        {item.sourceCount} publishers corroborate this story
+                        {item.trustedSourceCount} trusted + {item.sourceCount} total publishers corroborate this story
                       </span>
                     )}
+                  </div>
+                  <div className="mt-1.5 text-[10px] text-slate-500 leading-relaxed">
+                    <span className="font-bold text-slate-700">Authenticity basis:</span> {authenticity.reason}
                   </div>
                 </div>
 
@@ -137,9 +142,9 @@ export default function LiveIngestionFeed({
                       {item.eventCategory}
                     </span>
                     <span className={`font-mono font-bold text-[10px] px-1.5 py-0.5 rounded ${
-                      item.aiConfidenceScore >= 80 ? 'bg-emerald-100 text-emerald-800' : item.aiConfidenceScore >= 40 ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'
+                      authenticity.score >= 80 ? 'bg-emerald-100 text-emerald-800' : authenticity.score >= 40 ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'
                     }`}>
-                      AI: {item.aiConfidenceScore}%
+                      Authenticity: {authenticity.score}%
                     </span>
                   </div>
                 </div>

@@ -24,6 +24,45 @@ function findLocation(text) {
 }
 
 const STOP_WORDS = new Set(['the', 'and', 'for', 'from', 'with', 'will', 'into', 'over', 'near', 'today', 'latest', 'weather', 'imd']);
+const TRUSTED_PUBLISHER_DOMAINS = new Set([
+  'aajtak.in', 'aninews.in', 'bbc.com', 'deccanherald.com', 'economictimes.indiatimes.com',
+  'hindustantimes.com', 'indianexpress.com', 'ndtv.com', 'news18.com', 'pib.gov.in',
+  'reuters.com', 'thehindu.com', 'timesofindia.indiatimes.com', 'wmo.int', 'imd.gov.in'
+]);
+const TRUSTED_PUBLISHER_NAMES = new Set([
+  'aaj tak', 'ani', 'bbc', 'deccan herald', 'economic times', 'hindustan times',
+  'indian express', 'ndtv', 'news18', 'press information bureau', 'reuters',
+  'the hindu', 'the times of india', 'times of india', 'world meteorological organization',
+  'india meteorological department'
+]);
+
+function getHostname(url) {
+  try {
+    return new URL(url).hostname.toLowerCase().replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+}
+
+function verifyPublisher(sourceName, sourceUrl) {
+  const hostname = getHostname(sourceUrl);
+  const normalizedName = sourceName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+  const trustedByDomain = hostname &&
+    hostname !== 'news.google.com' &&
+    [...TRUSTED_PUBLISHER_DOMAINS].some((domain) => hostname === domain || hostname.endsWith(`.${domain}`));
+  const trustedByName = [...TRUSTED_PUBLISHER_NAMES].some((name) => normalizedName.includes(name));
+  const trusted = trustedByDomain || trustedByName;
+  return {
+    name: sourceName,
+    url: sourceUrl,
+    hostname,
+    verified: Boolean(trusted),
+    verificationBasis: trustedByDomain ? 'publisher domain' : trustedByName ? 'publisher identity' : null,
+    verificationReason: trusted
+      ? `Publisher verified by ${trustedByDomain ? 'domain' : 'publisher identity'} against the trusted source registry.`
+      : 'Publisher could not be matched to the trusted source registry.'
+  };
+}
 
 function storyKey(item) {
   const words = item.text
@@ -52,21 +91,36 @@ function relatedStories(items) {
   }
 
   return groups.map((group) => {
-    const sources = [...new Map(group.items.map((item) => [item.sourceHandle, {
-      name: item.sourceHandle,
-      url: item.externalUrl
-    }])).values()];
+    const sources = [...new Map(group.items.map((item) => {
+      const verification = verifyPublisher(item.sourceHandle, item.sourceUrl);
+      return [item.sourceHandle, { ...verification, url: item.externalUrl || item.sourceUrl }];
+    })).values()];
+    const trustedSources = sources.filter((source) => source.verified);
     const primary = group.items[0];
+    const displayVerified = sources.length >= 2 && trustedSources.length >= 1;
     return {
       ...primary,
       id: `NEWS-GROUP-${group.items.map((item) => item.id).sort().join('-')}`,
       sourceHandle: sources.length > 1 ? `${sources.length} independent sources` : primary.sourceHandle,
       sourceCount: sources.length,
+      trustedSourceCount: trustedSources.length,
+      sourceVerification: sources.map((source) => source.verificationReason),
+      evidenceChecks: [
+        `${sources.length} independent publisher${sources.length === 1 ? '' : 's'} identified`,
+        `${trustedSources.length} trusted publisher${trustedSources.length === 1 ? '' : 's'} matched`,
+        `${group.items.length} duplicate/near-duplicate report${group.items.length === 1 ? '' : 's'} grouped`,
+        'Original citation link retained for each source'
+      ],
       relatedSources: sources,
       clusterCount: group.items.length,
-      verificationStatus: sources.length > 1 ? 'verified' : 'review',
-      aiConfidenceScore: sources.length > 1 ? Math.min(90, 55 + sources.length * 10) : 0,
-      text: sources.length > 1
+      verificationStatus: displayVerified ? 'verified' : 'review',
+      aiConfidenceScore: displayVerified ? Math.min(90, 55 + trustedSources.length * 10) : 0,
+      authenticityScore: displayVerified ? Math.min(90, 55 + trustedSources.length * 10) : 0,
+      authenticityLabel: displayVerified ? 'VERIFIED FOR DISPLAY' : 'HELD BACK',
+      authenticityReason: displayVerified
+        ? `${trustedSources.length} trusted publisher${trustedSources.length === 1 ? '' : 's'} and ${sources.length} independent source${sources.length === 1 ? '' : 's'} report a matching event. This supports authenticity but cannot guarantee every detail.`
+        : 'This story was withheld because it lacks enough corroborating sources or a verified publisher domain.',
+      text: displayVerified
         ? `${primary.text} Corroborated by ${sources.length} independent publishers.`
         : primary.text
     };
@@ -88,12 +142,17 @@ export async function fetchLiveWeatherNews() {
       const timestamp = item.querySelector('pubDate')?.textContent || new Date().toISOString();
       const category = detectCategory(`${title} ${description}`);
 
+      const externalUrl = item.querySelector('link')?.textContent?.trim() || null;
+      const sourceElement = item.querySelector('source');
+      const sourceUrl = sourceElement?.getAttribute('url') || null;
       return {
         id: `NEWS-${Date.parse(timestamp) || Date.now()}-${index}`,
         timestamp: new Date(timestamp).toISOString(),
         source: 'news',
-        sourceHandle: item.querySelector('source')?.textContent?.trim() || 'Google News',
+        sourceHandle: sourceElement?.textContent?.trim() || 'Unknown publisher',
+        sourceUrl,
         sourcePlatform: 'Google News RSS',
+        citationType: 'Google News RSS article citation',
         text: `${title}${description && description !== title ? ` — ${description}` : ''}`,
         city: location.city,
         state: location.state,
@@ -103,14 +162,17 @@ export async function fetchLiveWeatherNews() {
         mediaUrl: null,
         hasMedia: false,
         verificationStatus: 'review',
-        aiConfidenceScore: 0,
+        aiConfidenceScore: 25,
+        authenticityScore: 25,
+        authenticityLabel: 'UNVERIFIED',
+        authenticityReason: 'Only one publisher is available. The report needs independent confirmation or sensor evidence before it can be considered authentic.',
         nearestSensor: null,
         clusterCount: 1,
         tags: ['Live news', '#Weather', '#IMD'],
-        externalUrl: item.querySelector('link')?.textContent?.trim() || null
+        externalUrl
       };
     });
-    return relatedStories(items);
+    return relatedStories(items).filter((item) => item.verificationStatus === 'verified');
   } catch (error) {
     console.warn('News proxy unavailable; loading live weather observations instead.', error);
     return fetchLiveWeatherObservations();
@@ -157,6 +219,9 @@ async function fetchLiveWeatherObservations() {
       hasMedia: false,
       verificationStatus: 'official',
       aiConfidenceScore: 100,
+      authenticityScore: 95,
+      authenticityLabel: 'DIRECT OBSERVATION',
+      authenticityReason: 'Live measurement returned directly by the Open-Meteo weather API. This confirms the observation, not a news claim.',
       nearestSensor: null,
       clusterCount: 1,
       tags: ['Live observation', '#Weather', '#OpenMeteo'],
