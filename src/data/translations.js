@@ -1,11 +1,11 @@
 export const translations = {
   en: {
     // Header
-    govTitle: "Government of India",
-    ministryTitle: "Ministry of Earth Sciences (MoES)",
-    deptTitle: "India Meteorological Department (IMD)",
-    platformTitle: "National Weather Big Data Analytics Platform",
-    tagline: "Dedicated to the Service of the Nation since 1875",
+    govTitle: "",
+    ministryTitle: "",
+    deptTitle: "National Weather Big Data Analytics",
+    platformTitle: "National Weather Big Data Analytics",
+    tagline: "Live weather intelligence",
     emergencyHelpline: "Disaster Helpline: 1070 / 1077",
     hindiWebsite: "हिन्दी",
     englishWebsite: "English",

@@ -266,8 +266,8 @@ export default function InteractiveWeatherMap({
     citizenReports.clearLayers();
     if (layers.citizenReports) {
       const filteredReports = selectedHazard === 'all'
-        ? bigDataFeed
-        : bigDataFeed.filter(r => r.eventCategory === selectedHazard);
+        ? bigDataFeed.filter((report) => Number.isFinite(report.lat) && Number.isFinite(report.lng))
+        : bigDataFeed.filter((report) => report.eventCategory === selectedHazard && Number.isFinite(report.lat) && Number.isFinite(report.lng));
 
       for (const item of filteredReports) {
         // Different styling based on verification status
@@ -305,7 +305,7 @@ export default function InteractiveWeatherMap({
             box-shadow: 0 3px 8px rgba(0,0,0,0.35);
             white-space: nowrap;
           ">
-            <span>${item.source === 'twitter' ? '𝕏' : '👥'}</span>
+            <span>${item.source === 'twitter' ? '𝕏' : item.source === 'news' ? '📰' : '👥'}</span>
             <span>${item.eventCategory.toUpperCase().slice(0, 4)}</span>
             <span style="background: rgba(0,0,0,0.25); border-radius: 4px; padding: 1px 3px;">${badgeIcon}</span>
           </div>

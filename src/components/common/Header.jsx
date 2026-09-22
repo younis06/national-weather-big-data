@@ -44,25 +44,17 @@ export default function Header({
 
   return (
     <header className="w-full bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50 transition-colors">
-      {/* 1. Official Government Top Strip */}
-      <div className="bg-[#0b2545] text-slate-100 text-xs py-1.5 px-4 sm:px-6">
+      <div className="bg-slate-950 text-slate-100 text-xs py-1.5 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-          {/* Left: Gov Identity */}
-          <div className="flex items-center space-x-3">
-            <span className="font-semibold tracking-wide flex items-center gap-1.5">
-              <span className="inline-block w-2 h-2 rounded-full bg-orange-400"></span>
-              {t.govTitle} | {t.ministryTitle}
-            </span>
-            <span className="hidden md:inline text-slate-400">|</span>
-            <span className="hidden md:inline text-slate-300 font-medium">{t.tagline}</span>
+          <div className="flex items-center gap-2 font-semibold tracking-wide">
+            <span className="inline-block w-2 h-2 rounded-full bg-cyan-400"></span>
+            <span>Weather intelligence, in one place</span>
           </div>
 
-          {/* Right: Accessibility Controls & Emergency Hotline */}
           <div className="flex items-center space-x-4">
-            {/* Helpline */}
             <div className="flex items-center text-amber-300 font-semibold gap-1">
               <PhoneCall className="w-3.5 h-3.5" />
-              <span>{t.emergencyHelpline}</span>
+              <span>Weather desk: 1070 / 1077</span>
             </div>
 
             {/* Font Size Adjusters */}
@@ -116,32 +108,19 @@ export default function Header({
         </div>
       </div>
 
-      {/* 2. Main Identity Bar */}
-      <div className="bg-gradient-to-r from-slate-50 to-white py-3 px-4 sm:px-6 border-b border-slate-200">
+      <div className="bg-gradient-to-r from-[#081b33] via-[#102f52] to-[#164e63] py-4 px-4 sm:px-6 border-b border-cyan-900">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          {/* Logo & Department Branding */}
           <div className="flex items-center space-x-3.5">
-            {/* National Emblem & IMD Crest */}
-            <div className="flex items-center space-x-2">
-              <div className="w-12 h-12 rounded-full bg-slate-900 border-2 border-amber-500 flex items-center justify-center text-white font-serif font-bold text-lg shadow">
-                🇮🇳
-              </div>
-              <div className="w-12 h-12 rounded-full bg-[#003366] border-2 border-cyan-400 flex items-center justify-center text-cyan-200 shadow">
-                <CloudSun className="w-7 h-7" />
-              </div>
+            <div className="w-12 h-12 rounded-2xl bg-cyan-400/15 border border-cyan-300/40 flex items-center justify-center text-cyan-200 shadow-lg">
+              <CloudSun className="w-7 h-7" />
             </div>
 
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-bold text-[#0b2545] tracking-tight leading-none font-serif">
-                  {t.deptTitle}
-                </h1>
-                <span className="bg-amber-100 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-300">
-                  IMD@150
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-slate-600 font-medium mt-0.5">
-                {t.platformTitle} (Problem Statement ID 26069)
+              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-none">
+                {t.platformTitle}
+              </h1>
+              <p className="text-xs sm:text-sm text-cyan-100/75 font-medium mt-1">
+                Live observations, forecasts and weather signals
               </p>
             </div>
           </div>
@@ -152,7 +131,7 @@ export default function Header({
             <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-300 text-xs">
               <span className={`w-2.5 h-2.5 rounded-full ${isStreaming ? 'bg-emerald-500 animate-ping' : 'bg-slate-400'}`}></span>
               <span className="font-medium text-slate-700">
-                {isStreaming ? 'Big Data Pipeline: Streaming' : 'Pipeline: Paused'}
+                {isStreaming ? 'Live observations' : 'Observations paused'}
               </span>
               <button 
                 onClick={() => setIsStreaming(!isStreaming)}
@@ -174,15 +153,14 @@ export default function Header({
         </div>
       </div>
 
-      {/* 3. Navigation Bar & Portal Switcher */}
-      <div className="bg-[#13315c] text-white px-4 sm:px-6 shadow-inner">
+      <div className="bg-slate-900 text-white px-4 sm:px-6 shadow-inner">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between">
           <nav className="flex space-x-1 sm:space-x-4 py-1" aria-label="Portal Navigation">
             <button
               onClick={() => setActiveTab('public')}
               className={`flex items-center gap-2 py-2.5 px-4 text-sm font-semibold rounded-t-md transition border-b-2 ${
                 activeTab === 'public'
-                  ? 'bg-white text-[#0b2545] border-amber-500 shadow-sm'
+                  ? 'bg-cyan-400 text-slate-950 border-cyan-300 shadow-sm'
                   : 'text-slate-200 hover:text-white hover:bg-[#1a447c] border-transparent'
               }`}
             >
@@ -225,7 +203,7 @@ export default function Header({
         <div className="max-w-7xl mx-auto w-full flex items-center gap-2">
           <span className="flex items-center gap-1 font-bold text-red-700 uppercase bg-red-100 px-2 py-0.5 rounded shrink-0">
             <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
-            IMD Alert
+            Weather Alert
           </span>
           <div className="truncate text-slate-800 font-medium">
             <span>

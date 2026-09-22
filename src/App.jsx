@@ -10,8 +10,7 @@ import CitizenReportModal from './components/public/CitizenReportModal';
 import AdminDashboard from './components/admin/AdminDashboard';
 
 import { translations } from './data/translations';
-import { INITIAL_BIG_DATA_STREAM } from './data/initialBigDataFeed';
-import { createRandomSimulatedReport } from './services/aiVerificationEngine';
+import { fetchLiveWeatherNews } from './services/liveNewsFeed';
 
 export default function App() {
   const [lang, setLang] = useState('en');
@@ -23,19 +22,29 @@ export default function App() {
   const [selectedStation, setSelectedStation] = useState(null);
 
   // Big Data Ingested Feed State
-  const [bigDataFeed, setBigDataFeed] = useState(INITIAL_BIG_DATA_STREAM);
+  const [bigDataFeed, setBigDataFeed] = useState([]);
+  const [newsFeedStatus, setNewsFeedStatus] = useState('loading');
 
   const t = translations[lang] || translations.en;
 
-  // Background Ingestion Stream Simulation
-  useEffect(() => {
-    let interval = null;
-    if (isStreaming) {
-      interval = setInterval(() => {
-        const newReport = createRandomSimulatedReport();
-        setBigDataFeed((prev) => [newReport, ...prev.slice(0, 45)]);
-      }, 10000); // New event ingested every 10 seconds
+  const refreshLiveNews = async () => {
+    try {
+      const liveItems = await fetchLiveWeatherNews();
+      setBigDataFeed((previous) => {
+        const citizenItems = previous.filter((item) => item.source === 'citizen');
+        return [...citizenItems, ...liveItems].slice(0, 50);
+      });
+      setNewsFeedStatus('live');
+    } catch (error) {
+      console.error('Unable to load live weather news:', error);
+      setNewsFeedStatus('error');
     }
+  };
+
+  useEffect(() => {
+    if (!isStreaming) return undefined;
+    refreshLiveNews();
+    const interval = setInterval(refreshLiveNews, 15 * 60 * 1000);
     return () => clearInterval(interval);
   }, [isStreaming]);
 
@@ -61,8 +70,7 @@ export default function App() {
 
   // Manual Trigger for Stream Pulse
   const handleTriggerSimulation = () => {
-    const report = createRandomSimulatedReport();
-    setBigDataFeed((prev) => [report, ...prev]);
+    refreshLiveNews();
   };
 
   return (
@@ -115,13 +123,14 @@ export default function App() {
             <SpecializedServicesGrid t={t} lang={lang} />
           </div>
         ) : (
-          /* BIG DATA ANALYTICS & ADMIN COMMAND CENTER (MoES/IMD Problem Statement 26069) */
+          /* Live weather analytics workspace */
           <AdminDashboard
             t={t}
             lang={lang}
             feed={bigDataFeed}
             onUpdateStatus={handleUpdateStatus}
             onTriggerSimulation={handleTriggerSimulation}
+            newsFeedStatus={newsFeedStatus}
           />
         )}
       </main>

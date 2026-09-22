@@ -23,6 +23,9 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
   const [searchQuery, setSearchQuery] = useState("");
   const [geoError, setGeoError] = useState(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [liveWeather, setLiveWeather] = useState(null);
+  const [locationName, setLocationName] = useState(null);
+  const [lastWeatherUpdate, setLastWeatherUpdate] = useState(null);
 
   // Current state object
   const currentState = INDIAN_STATES_DATA.find(s => s.stateCode === selectedStateCode) || INDIAN_STATES_DATA[0];
@@ -30,6 +33,47 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
 
   // If selectedStation is not set or belongs to another state/district, use currentDistrictObj's first station
   const station = selectedStation || currentDistrictObj.stations[0];
+  const weatherDescription = (code) => {
+    if (code === 0) return lang === 'hi' ? 'साफ आसमान' : 'Clear sky';
+    if ([1, 2, 3].includes(code)) return lang === 'hi' ? 'आंशिक बादल' : 'Partly cloudy';
+    if ([45, 48].includes(code)) return lang === 'hi' ? 'कोहरा' : 'Fog';
+    if ([51, 53, 55, 56, 57].includes(code)) return lang === 'hi' ? 'बूंदाबांदी' : 'Drizzle';
+    if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return lang === 'hi' ? 'बारिश' : 'Rain';
+    if ([71, 73, 75, 77, 85, 86].includes(code)) return lang === 'hi' ? 'बर्फबारी' : 'Snow';
+    if ([95, 96, 99].includes(code)) return lang === 'hi' ? 'गरज के साथ बारिश' : 'Thunderstorm';
+    return lang === 'hi' ? 'अज्ञात स्थिति' : 'Weather update';
+  };
+
+  const loadLiveWeather = async (latitude, longitude) => {
+    const weatherUrl = new URL('https://api.open-meteo.com/v1/forecast');
+    weatherUrl.search = new URLSearchParams({
+      latitude,
+      longitude,
+      current: 'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m',
+      hourly: 'temperature_2m,precipitation_probability,precipitation',
+      daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
+      timezone: 'auto',
+      forecast_days: '7'
+    });
+
+    const response = await fetch(weatherUrl);
+    if (!response.ok) throw new Error('Weather service returned an error.');
+    const data = await response.json();
+    setLiveWeather(data);
+    setLastWeatherUpdate(new Date());
+
+    try {
+      const geocodeUrl = new URL('https://geocoding-api.open-meteo.com/v1/reverse');
+      geocodeUrl.search = new URLSearchParams({ latitude, longitude, language: lang, count: 1 });
+      const geocodeResponse = await fetch(geocodeUrl);
+      if (geocodeResponse.ok) {
+        const geocode = await geocodeResponse.json();
+        setLocationName(geocode.results?.[0]?.name || null);
+      }
+    } catch {
+      setLocationName(null);
+    }
+  };
 
   // Geolocation Handler
   const handleDetectLocation = () => {
@@ -41,8 +85,7 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
     setGeoError(null);
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setIsLocating(false);
+      async (position) => {
         const { latitude, longitude } = position.coords;
         // Find closest station
         let closest = null;
@@ -65,6 +108,15 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
           setSelectedDistrict(closest.district);
           setSelectedStation(closest.station);
         }
+
+        try {
+          await loadLiveWeather(latitude, longitude);
+          setGeoError(null);
+        } catch {
+          setGeoError("Your location was found, but live weather data is temporarily unavailable. Showing the nearest IMD station.");
+        } finally {
+          setIsLocating(false);
+        }
       },
       (err) => {
         setIsLocating(false);
@@ -74,12 +126,14 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
           setGeoError("Could not retrieve GPS position. Please select manually from the list.");
         }
       },
-      { timeout: 8000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 }
     );
   };
 
   const handleStateChange = (e) => {
     const code = e.target.value;
+    setLiveWeather(null);
+    setLocationName(null);
     setSelectedStateCode(code);
     const st = INDIAN_STATES_DATA.find(s => s.stateCode === code);
     if (st && st.districts.length > 0) {
@@ -92,6 +146,8 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
 
   const handleDistrictChange = (e) => {
     const distName = e.target.value;
+    setLiveWeather(null);
+    setLocationName(null);
     setSelectedDistrict(distName);
     const dObj = currentState.districts.find(d => d.district === distName);
     if (dObj && dObj.stations.length > 0) {
@@ -101,6 +157,8 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
 
   const handleStationChange = (e) => {
     const stId = e.target.value;
+    setLiveWeather(null);
+    setLocationName(null);
     const st = currentDistrictObj.stations.find(s => s.id === stId);
     if (st) {
       setSelectedStation(st);
@@ -134,7 +192,12 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
     setGeoError(`No station matching "${searchQuery}". Please select from dropdowns.`);
   };
 
-  const hourlyData = station.hourly || [
+  const weather = liveWeather?.current;
+  const hourlyData = liveWeather ? liveWeather.hourly.time.slice(0, 8).map((time, index) => ({
+    time: new Date(time).toLocaleTimeString(lang === 'hi' ? 'hi-IN' : 'en-IN', { hour: '2-digit', minute: '2-digit' }),
+    temp: Math.round(liveWeather.hourly.temperature_2m[index]),
+    rain: liveWeather.hourly.precipitation[index] || 0
+  })) : station.hourly || [
     { time: "00:00", temp: 25, rain: 0 },
     { time: "03:00", temp: 24, rain: 0 },
     { time: "06:00", temp: 24, rain: 2 },
@@ -145,7 +208,13 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
     { time: "21:00", temp: 26, rain: 0 }
   ];
 
-  const forecastData = station.forecast || [
+  const forecastData = liveWeather ? liveWeather.daily.time.map((date, index) => ({
+    day: new Date(`${date}T12:00:00`).toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', { weekday: 'short' }),
+    tempMax: Math.round(liveWeather.daily.temperature_2m_max[index]),
+    tempMin: Math.round(liveWeather.daily.temperature_2m_min[index]),
+    cond: weatherDescription(liveWeather.daily.weather_code[index]),
+    rainProb: liveWeather.daily.precipitation_probability_max[index] || 0
+  })) : station.forecast || [
     { day: "Mon", tempMax: 32, tempMin: 25, cond: "Passing Rain", rainProb: 60 },
     { day: "Tue", tempMax: 31, tempMin: 24, cond: "Thunderstorm", rainProb: 75 },
     { day: "Wed", tempMax: 31, tempMin: 24, cond: "Scattered Rain", rainProb: 70 },
@@ -166,7 +235,7 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
               {t.weatherAtLocation}
             </h2>
             <p className="text-xs text-slate-300 mt-0.5">
-              Select or detect your location to view official IMD station telemetry and nowcasts.
+              Use your device location for a live forecast at your coordinates, or choose an IMD station manually.
             </p>
           </div>
 
@@ -269,7 +338,7 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-                {station.name}
+                {locationName || station.name}
               </h3>
               <span className="bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-300 flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5" />
@@ -277,13 +346,15 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Lat: {station.lat}°N, Lng: {station.lng}°E • Type: {station.type}
+              {liveWeather
+                ? `Coordinates: ${liveWeather.latitude.toFixed(4)}°N, ${liveWeather.longitude.toFixed(4)}°E • Live forecast service`
+                : `Lat: ${station.lat}°N, Lng: ${station.lng}°E • Type: ${station.type}`}
             </p>
           </div>
 
           <div className="flex items-center text-xs text-slate-600 font-mono bg-white px-3 py-1.5 rounded-lg border border-slate-300 shadow-xs">
             <Clock className="w-3.5 h-3.5 mr-1.5 text-blue-700" />
-            <span>{t.lastUpdated}: 21-Sep-2026 20:30 IST (IMD NWFC)</span>
+            <span>{t.lastUpdated}: {lastWeatherUpdate ? lastWeatherUpdate.toLocaleString(lang === 'hi' ? 'hi-IN' : 'en-IN') : 'IMD station observation'}</span>
           </div>
         </div>
 
@@ -296,10 +367,10 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
               <Thermometer className="w-4 h-4 text-orange-500" />
             </div>
             <div className="text-2xl font-bold text-slate-900">
-              {station.temp}°<span className="text-sm font-normal text-slate-600">C</span>
+              {weather ? Math.round(weather.temperature_2m) : station.temp}°<span className="text-sm font-normal text-slate-600">C</span>
             </div>
             <div className="text-[11px] text-slate-500 mt-0.5">
-              {t.feelsLike} {station.feelsLike}°C
+              {t.feelsLike} {weather ? Math.round(weather.apparent_temperature) : station.feelsLike}°C
             </div>
           </div>
 
@@ -310,10 +381,10 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
               <Sun className="w-4 h-4 text-amber-500" />
             </div>
             <div className="text-sm font-bold text-slate-900 truncate" title={station.condition}>
-              {station.condition}
+              {weather ? weatherDescription(weather.weather_code) : station.condition}
             </div>
             <div className="text-[11px] text-slate-500 mt-1">
-              Rain Today: <span className="font-semibold text-blue-700">{station.rainToday || 0} mm</span>
+              Rain Today: <span className="font-semibold text-blue-700">{weather ? weather.precipitation : station.rainToday || 0} mm</span>
             </div>
           </div>
 
@@ -324,7 +395,7 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
               <Droplets className="w-4 h-4 text-cyan-600" />
             </div>
             <div className="text-2xl font-bold text-slate-900">
-              {station.humidity}%
+              {weather ? weather.relative_humidity_2m : station.humidity}%
             </div>
             <div className="text-[11px] text-slate-500 mt-0.5">
               Dew Point: 23°C
@@ -338,10 +409,10 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
               <Wind className="w-4 h-4 text-blue-500" />
             </div>
             <div className="text-xl font-bold text-slate-900">
-              {station.windSpeed} <span className="text-xs font-normal text-slate-600">km/h</span>
+              {weather ? Math.round(weather.wind_speed_10m) : station.windSpeed} <span className="text-xs font-normal text-slate-600">km/h</span>
             </div>
             <div className="text-[11px] text-slate-500 mt-0.5">
-              Dir: {station.windDirection || 'NW'}
+              Dir: {weather ? `${Math.round(weather.wind_direction_10m)}°` : station.windDirection || 'NW'}
             </div>
           </div>
 
@@ -352,7 +423,7 @@ export default function LocationWeatherHub({ t, lang, selectedStation, setSelect
               <Gauge className="w-4 h-4 text-indigo-500" />
             </div>
             <div className="text-lg font-bold text-slate-900">
-              {station.pressure} <span className="text-xs font-normal text-slate-600">hPa</span>
+              {weather ? Math.round(weather.surface_pressure) : station.pressure} <span className="text-xs font-normal text-slate-600">hPa</span>
             </div>
             <div className="text-[11px] text-slate-500 mt-0.5">
               Normal MSLP

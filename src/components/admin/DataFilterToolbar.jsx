@@ -161,6 +161,7 @@ export default function DataFilterToolbar({
             <option value="all">All Channels (Unified)</option>
             <option value="twitter">X / Twitter (#IMD)</option>
             <option value="citizen">Jan-Mausam (Citizen App)</option>
+            <option value="news">Live weather news</option>
             <option value="public_api">Public Datasets & Buoys</option>
           </select>
         </div>

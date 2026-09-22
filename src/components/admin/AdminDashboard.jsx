@@ -18,7 +18,8 @@ export default function AdminDashboard({
   lang,
   feed,
   onUpdateStatus,
-  onTriggerSimulation
+  onTriggerSimulation,
+  newsFeedStatus
 }) {
   const [selectedItemId, setSelectedItemId] = useState(feed[0]?.id || null);
   const [filters, setFilters] = useState({
@@ -77,22 +78,25 @@ export default function AdminDashboard({
               {t.adminTitle}
             </h2>
             <span className="bg-amber-500 text-slate-950 text-xs font-black px-2 py-0.5 rounded uppercase">
-              MoES / IMD Command Center
+              Live analytics workspace
             </span>
           </div>
           <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-            {t.adminSubtitle}. Processing multi-source internet feeds, social media streams tagged with #IMD, and ground AWS sensors to detect disinformation and corroborate disaster events.
+            {t.adminSubtitle}. Combining live weather news, public observations and sensor data for quick review.
+          </p>
+          <p className={`text-[11px] mt-2 font-semibold ${newsFeedStatus === 'live' ? 'text-emerald-300' : newsFeedStatus === 'error' ? 'text-amber-300' : 'text-slate-300'}`}>
+            {newsFeedStatus === 'live' ? 'Live weather news connected' : newsFeedStatus === 'error' ? 'Live weather news unavailable; retry with Refresh Live News' : 'Connecting to live weather news...'}
           </p>
         </div>
 
-        {/* Action button to inject sample incoming report */}
+        {/* Refresh the external news feed */}
         <button
           onClick={onTriggerSimulation}
           className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl shadow flex items-center gap-2 transition active:scale-95 shrink-0"
-          title="Simulate incoming social media stream pulse"
+          title="Refresh live weather news"
         >
           <RefreshCw className="w-4 h-4 text-cyan-300" />
-          <span>Simulate Stream Pulse</span>
+          <span>Refresh Live News</span>
         </button>
       </div>
 

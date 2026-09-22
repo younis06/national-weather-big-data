@@ -50,3 +50,11 @@ http://localhost:5173/
 # 5. Run production build
 npm run build
 ```
+
+### Live weather news feed
+
+The admin ingestion feed reads current India weather/IMD articles from Google News RSS
+through the Vite development proxy at `/api/weather-news`. Articles are labeled as
+`REVIEW` and are not treated as official IMD warnings until verified by an operator.
+For production hosting, configure an equivalent server-side RSS proxy because static
+browser deployments cannot safely proxy cross-origin RSS requests.

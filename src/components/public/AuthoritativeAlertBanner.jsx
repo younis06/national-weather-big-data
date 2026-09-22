@@ -188,7 +188,7 @@ export default function AuthoritativeAlertBanner({ t, lang }) {
                   </div>
 
                   <div className="text-[11px] text-slate-500 italic">
-                    Issued under the Disaster Management Framework (MoES / NDMA / IMD)
+                    Issued from the platform's severe-weather alert feed
                   </div>
                 </div>
               )}

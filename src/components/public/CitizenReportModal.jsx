@@ -108,7 +108,7 @@ export default function CitizenReportModal({
                 {t.reportModalTitle}
               </h3>
               <p className="text-xs text-slate-300">
-                National Weather Big Data Ingestion Service (MoES)
+                National Weather Big Data Ingestion Service
               </p>
             </div>
           </div>
@@ -291,7 +291,7 @@ export default function CitizenReportModal({
                 </p>
                 <div className="text-[11px] text-slate-600 mt-2 flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>Integrated with central MoES/IMD GIS database.</span>
+                  <span>Matched with nearby weather data where available.</span>
                 </div>
               </div>
 
