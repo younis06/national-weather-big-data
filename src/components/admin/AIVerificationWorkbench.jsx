@@ -94,6 +94,20 @@ export default function AIVerificationWorkbench({
           <div className="p-3 bg-white rounded-lg border border-slate-200 shadow-xs text-xs text-slate-900 leading-relaxed font-medium">
             "{item.text}"
           </div>
+          {item.relatedSources?.length > 0 && (
+            <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+              <div className="text-xs font-bold text-emerald-900 mb-1">
+                Independent publisher cross-check ({item.relatedSources.length})
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {item.relatedSources.map((source) => (
+                  <a key={source.name} href={source.url || '#'} target="_blank" rel="noreferrer" className="text-xs text-emerald-800 underline">
+                    {source.name}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
 
           {item.hasMedia && item.mediaUrl && (
             <div className="rounded-lg overflow-hidden border border-slate-200 max-h-48 relative">

@@ -23,6 +23,56 @@ function findLocation(text) {
   return match ? { city: match[0], state: match[1] } : { city: 'India', state: 'National' };
 }
 
+const STOP_WORDS = new Set(['the', 'and', 'for', 'from', 'with', 'will', 'into', 'over', 'near', 'today', 'latest', 'weather', 'imd']);
+
+function storyKey(item) {
+  const words = item.text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((word) => word.length > 3 && !STOP_WORDS.has(word));
+  return new Set(words);
+}
+
+function relatedStories(items) {
+  const groups = [];
+  for (const item of items) {
+    const words = storyKey(item);
+    const match = groups.find((group) => {
+      if (group.category !== item.eventCategory || group.city !== item.city) return false;
+      const overlap = [...words].filter((word) => group.words.has(word)).length;
+      return overlap / Math.max(1, Math.min(words.size, group.words.size)) >= 0.45;
+    });
+    if (match) {
+      match.items.push(item);
+      words.forEach((word) => match.words.add(word));
+    } else {
+      groups.push({ category: item.eventCategory, city: item.city, words, items: [item] });
+    }
+  }
+
+  return groups.map((group) => {
+    const sources = [...new Map(group.items.map((item) => [item.sourceHandle, {
+      name: item.sourceHandle,
+      url: item.externalUrl
+    }])).values()];
+    const primary = group.items[0];
+    return {
+      ...primary,
+      id: `NEWS-GROUP-${group.items.map((item) => item.id).sort().join('-')}`,
+      sourceHandle: sources.length > 1 ? `${sources.length} independent sources` : primary.sourceHandle,
+      sourceCount: sources.length,
+      relatedSources: sources,
+      clusterCount: group.items.length,
+      verificationStatus: sources.length > 1 ? 'verified' : 'review',
+      aiConfidenceScore: sources.length > 1 ? Math.min(90, 55 + sources.length * 10) : 0,
+      text: sources.length > 1
+        ? `${primary.text} Corroborated by ${sources.length} independent publishers.`
+        : primary.text
+    };
+  });
+}
+
 export async function fetchLiveWeatherNews() {
   try {
     const response = await fetch('/api/weather-news');
@@ -31,7 +81,7 @@ export async function fetchLiveWeatherNews() {
     const xml = new DOMParser().parseFromString(await response.text(), 'application/xml');
     if (xml.querySelector('parsererror')) throw new Error('Live news feed returned invalid XML.');
 
-    return Array.from(xml.querySelectorAll('item')).slice(0, 30).map((item, index) => {
+    const items = Array.from(xml.querySelectorAll('item')).slice(0, 50).map((item, index) => {
       const title = item.querySelector('title')?.textContent?.trim() || 'Weather news update';
       const description = item.querySelector('description')?.textContent?.replace(/<[^>]+>/g, '').trim() || title;
       const location = findLocation(`${title} ${description}`);
@@ -60,6 +110,7 @@ export async function fetchLiveWeatherNews() {
         externalUrl: item.querySelector('link')?.textContent?.trim() || null
       };
     });
+    return relatedStories(items);
   } catch (error) {
     console.warn('News proxy unavailable; loading live weather observations instead.', error);
     return fetchLiveWeatherObservations();

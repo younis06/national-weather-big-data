@@ -33,8 +33,15 @@ export default function App() {
       setBigDataFeed((previous) => {
         const citizenItems = previous.filter((item) => item.source === 'citizen');
         const uniqueItems = [...liveItems, ...citizenItems].filter((item, index, items) => {
-          const identity = item.externalUrl || `${item.source}|${item.text}`;
-          return items.findIndex((candidate) => (candidate.externalUrl || `${candidate.source}|${candidate.text}`) === identity) === index;
+          const identity = item.source === 'weather_api'
+            ? `${item.source}|${item.city}|${item.timestamp}`
+            : item.externalUrl || `${item.source}|${item.text}`;
+          return items.findIndex((candidate) => {
+            const candidateIdentity = candidate.source === 'weather_api'
+              ? `${candidate.source}|${candidate.city}|${candidate.timestamp}`
+              : candidate.externalUrl || `${candidate.source}|${candidate.text}`;
+            return candidateIdentity === identity;
+          }) === index;
         });
         return uniqueItems.slice(0, 50);
       });

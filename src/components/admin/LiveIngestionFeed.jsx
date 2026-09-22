@@ -92,6 +92,37 @@ export default function LiveIngestionFeed({
                   <p className="text-xs text-slate-800 leading-snug line-clamp-2 font-medium">
                     {item.text}
                   </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px]">
+                    {item.relatedSources?.map((source) => (
+                      <a
+                        key={`${item.id}-${source.name}`}
+                        href={source.url || '#'}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(event) => event.stopPropagation()}
+                        className="inline-flex items-center gap-1 text-blue-700 hover:text-blue-900 underline"
+                      >
+                        {source.name}
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ))}
+                    {!item.relatedSources && item.externalUrl && (
+                      <a
+                        href={item.externalUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(event) => event.stopPropagation()}
+                        className="inline-flex items-center gap-1 text-blue-700 hover:text-blue-900 underline"
+                      >
+                        View source <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                    {item.sourceCount > 1 && (
+                      <span className="text-emerald-700 font-semibold">
+                        {item.sourceCount} publishers corroborate this story
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Bottom line: Location, Category tag, AI score */}

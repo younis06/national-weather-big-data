@@ -69,6 +69,9 @@ the dashboard continues to receive current data.
   operator workbench for status changes.
 - Deduplication: duplicate live articles are removed by source URL/content identity; public
   observations retain spatial duplicate-cluster metadata.
+- News corroboration: similar headlines are grouped into one story. Each story displays its
+  publisher links; it is marked `VERIFIED` only when at least two different publishers
+  independently report a matching event. Single-source stories remain `REVIEW`.
 - Dashboard analysis: the admin view supports date, custom date, event, state, district/city,
   verification, source and text filters. The map and charts use the filtered records.
 - Central storage: not yet implemented. The current application keeps data in browser memory
