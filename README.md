@@ -51,6 +51,27 @@ http://localhost:5173/
 npm run build
 ```
 
+### SIH verification backend
+
+The tested Python verifier is included at
+[`backend/sih-verification`](./backend/sih-verification). It is intentionally
+separate from the GitHub Pages frontend because GitHub Pages cannot run Flask
+or load Python model files.
+
+```bash
+cd backend\sih-verification
+python -m pip install -r requirements.txt
+python -m unittest -v
+python app.py
+```
+
+The API is available at `http://127.0.0.1:5000`. Send a `POST` request to
+`/verify` with the article text, publisher identity, citation URL, and any
+independent corroborating sources. Reports are returned as
+`VERIFIED_FOR_DISPLAY` only when the trusted-source, corroboration, location,
+event, freshness, and live-weather evidence gates pass. This backend has not
+yet been connected to the deployed frontend or a database.
+
 ### Live weather news feed
 
 The admin ingestion feed reads current India weather/IMD articles from Google News RSS
